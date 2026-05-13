@@ -13,29 +13,29 @@ snow_data <- generate_latlong(snow_data)
 pump_data <- generate_latlong(pump_data)
 ```
 
+```{r}
+neo4j_settings = c(schema = "http://", server = "localhost:7474", username="neo4j", password="neo4jneo4j", database="charlottes")
+```
 
 ```{r}
-# Idempotent constraints and data loading
+cypher_queries = c(
+    "CREATE CONSTRAINT choleraCase IF NOT EXISTS FOR (c:CholeraCase) REQUIRE c.id IS UNIQUE;",
+    "CREATE CONSTRAINT waterPump IF NOT EXISTS FOR (w:WaterPump) REQUIRE w.id IS UNIQUE;",
+    "LOAD CSV WITH HEADERS FROM 'file:///d://temp//JohnSnow-cholera.csv' AS row
+    MERGE (c:CholeraCase {
+        id: toInteger(row.id),
+        count: toInteger(row.Count),
+        longitude: toFloat(row.longitude),
+        latitude: toFloat(row.latitude)
+    });",
+    "LOAD CSV WITH HEADERS FROM 'file:///d://temp//JohnSnow-pumps.csv' AS row
+    MERGE (w:WaterPump {
+        id: toInteger(row.id),
+        longitude: toFloat(row.longitude),
+        latitude: toFloat(row.latitude)
+    });",
+    "MATCH (n) RETURN count(n)")
 
-neo4j_settings = c(schema = "http://", server = "localhost:7474", username="neo4j", password="neo4jneo4j", database="charlottes")
-
-cypher = "CREATE CONSTRAINT choleraCase IF NOT EXISTS FOR (c:CholeraCase) REQUIRE c.id IS UNIQUE;
-CREATE CONSTRAINT waterPump IF NOT EXISTS FOR (w:WaterPump) REQUIRE w.id IS UNIQUE;
-
-LOAD CSV WITH HEADERS FROM 'file:///d://temp//JohnSnow-cholera.csv' AS row
-MERGE (c:CholeraCase {
-    id: toInteger(row.id),
-    count: toInteger(row.Count),
-    longitude: toFloat(row.longitude),
-    latitude: toFloat(row.latitude)
-});
-
-LOAD CSV WITH HEADERS FROM 'file:///d://temp//JohnSnow-pumps.csv' AS row
-MERGE (w:WaterPump {
-    id: toInteger(row.id),
-    longitude: toFloat(row.longitude),
-    latitude: toFloat(row.latitude)
-});"
-
-df <- cypher |> neo4j_query(neo4j_settings)
+results <- cypher_queries |> neo4j_query(neo4j_settings)
+print(results)
 ```

@@ -36,8 +36,8 @@ generate_latlong <- function(df){
   return(working_df)
 }
 
-
-neo4j_query <- function(cypher, db_settings){
+#' @keywords internal
+.neo4j_query_execute <- function(cypher, db_settings){
   # Create https request
   req <- request(paste0(db_settings['schema'], db_settings['server'], "/db/", db_settings['database'], "/query/v2")) |>
     req_auth_basic(db_settings['username'], db_settings['password']) |>
@@ -51,7 +51,24 @@ neo4j_query <- function(cypher, db_settings){
   json <- resp |> resp_body_json(simplifyVector = TRUE)
   names <- json |> pluck("data", 1)
   df <- json |> pluck("data", 2) |> data.frame()
+
   # Rename columns
   colnames(df) = c(names)
   df
+}
+
+neo4j_query <- function(cypher, db_settings){
+  if(!is.vector(cypher))
+  {
+    output <- cypher |> .neo4j_query_execute(db_settings)
+    return(output)
+  }
+  
+  results = c()
+  for(query in cypher){
+    output <- query |> .neo4j_query_execute(db_settings)
+    results <- append(results, output)
+  }
+
+  return(results)
 }
