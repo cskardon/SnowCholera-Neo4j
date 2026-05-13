@@ -2,6 +2,7 @@
 library(SnowData)
 library(tidyverse)
 library(sf)
+library(httr2)
 source('functions.r')
 snow_data <- cholera_cases
 pump_data <- pump_locations
@@ -13,10 +14,12 @@ pump_data <- generate_latlong(pump_data)
 ```
 
 
-```{cypher}
+```{r}
 # Idempotent constraints and data loading
 
-CREATE CONSTRAINT choleraCase IF NOT EXISTS FOR (c:CholeraCase) REQUIRE c.id IS UNIQUE;
+neo4j_settings = c(schema = "http://", server = "localhost:7474", username="neo4j", password="neo4jneo4j", database="charlottes")
+
+cypher = "CREATE CONSTRAINT choleraCase IF NOT EXISTS FOR (c:CholeraCase) REQUIRE c.id IS UNIQUE;
 CREATE CONSTRAINT waterPump IF NOT EXISTS FOR (w:WaterPump) REQUIRE w.id IS UNIQUE;
 
 LOAD CSV WITH HEADERS FROM 'file:///d://temp//JohnSnow-cholera.csv' AS row
@@ -32,5 +35,7 @@ MERGE (w:WaterPump {
     id: toInteger(row.id),
     longitude: toFloat(row.longitude),
     latitude: toFloat(row.latitude)
-});
+});"
+
+df <- cypher |> neo4j_query(neo4j_settings)
 ```

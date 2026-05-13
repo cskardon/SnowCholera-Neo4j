@@ -35,3 +35,23 @@ generate_latlong <- function(df){
     )
   return(working_df)
 }
+
+
+neo4j_query <- function(cypher, db_settings){
+  # Create https request
+  req <- request(paste0(db_settings['schema'], db_settings['server'], "/db/", db_settings['database'], "/query/v2")) |>
+    req_auth_basic(db_settings['username'], db_settings['password']) |>
+    req_headers("Accept" = "application/json") |>
+    req_body_json(list("statement" = cypher))
+  
+  # Perform request
+  resp <- req |> req_perform()
+  
+  # Extract response and create dataframe
+  json <- resp |> resp_body_json(simplifyVector = TRUE)
+  names <- json |> pluck("data", 1)
+  df <- json |> pluck("data", 2) |> data.frame()
+  # Rename columns
+  colnames(df) = c(names)
+  df
+}
