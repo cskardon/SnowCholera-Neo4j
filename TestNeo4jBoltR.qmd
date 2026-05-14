@@ -1,0 +1,67 @@
+
+
+
+```{r}
+
+library(devtools)
+
+readRenviron(".Renviron")
+Sys.getenv("GITHUB_PAT")
+neo4jUser <- Sys.getenv("NEO4J_USER")
+neo4jPassword <- Sys.getenv("NEO4J_PASSWORD")
+neo4jDatabase <- Sys.getenv("NEO4J_DATABASE")
+neo4jUri <- Sys.getenv("NEO4J_URI")
+
+connectionInfo <- paste0("NEO4J_USER: ", neo4jUser, "\n",
+       "NEO4J_PASSWORD: ", ifelse(nchar(neo4jPassword) > 0, "****", "Not Set"), "\n",
+       "NEO4J_DATABASE: ", neo4jDatabase, "\n",
+       "NEO4J_URI: ", neo4jUri)
+
+cat(connectionInfo)
+
+```
+
+```{r}
+devtools::install_github("cskardon/Neo4jBoltR", auth_token=Sys.getenv("GITHUB_PAT"), force=TRUE)
+# library(pak)
+# pak::pak("cskardon/Neo4jBoltR", auth_token=Sys.getenv("GITHUB_PAT"))
+```
+
+```{r}
+# install_github("cskardon/Neo4jBoltR", auth_token=Sys.getenv("GITHUB_PAT"))
+library(Neo4jBoltR)
+```
+
+```{r}
+connection <- neo4j_connect(
+  uri = neo4jUri,
+  auth = neo4j_auth_basic(neo4jUser, neo4jPassword),
+  database = neo4jDatabase
+)
+print(connection)
+```
+
+```{r}
+df <- neo4j_query(
+  connection,
+  "MATCH (n) RETURN count(n) AS nodeCount"
+)
+print(df)
+```
+
+
+```{r}
+df <- neo4j_query(
+  connection,
+  "MATCH (g:Grant)
+  WHERE g.agency = $agency
+  RETURN g.acronym, g.grantId",
+  params = list(agency = "Medical Research Council")
+)
+print(df)
+```
+
+
+```{r}
+neo4j_disconnect(connection)
+```
